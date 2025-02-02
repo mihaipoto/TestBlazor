@@ -1,0 +1,146 @@
+﻿@page "/"
+@inject ITrafficClassifier TrafficClassifier
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Data
+@using System.Dynamic
+@using Syncfusion.Blazor.Notifications
+@using Syncfusion.Blazor.Buttons
+
+
+<div class="container">
+    <div class="card border-opacity-10 m-2 p-2  @backgroundColorClass @borderColorClass">
+        <div class="card-header d-flex justify-content-center @textColorClass">
+            <h1>Title</h1>
+        </div>
+        <div class="card-body">
+            <div class="d-flex justify-content-end align-items-center">
+                <SfButton class="btn btn-primary m-2" Content="@Content" @onclick="ToggleTheme" @ref="ToggleBtnObj"></SfButton>
+                <SfSwitch @bind-Checked="@IsRefreshing" />
+            </div>
+
+            <div class="d-flex justify-content-end">
+                <p class="@textColorClass"><em>@RefreshString</em>  </p>
+            </div>
+        </div>
+       
+    </div>
+
+
+    <div class="card border-opacity-10 m-2 p-2  @backgroundColorClass @borderColorClass">
+        <div class="card-header @borderColorClass">
+            <p class="@textColorClass h5 pb-2"> Interfaces </p>
+        </div>
+        <SfGrid class="card-body" DataSource="@TrafficClassifier.MyNetworkDevices" />
+    </div>
+
+
+
+
+
+    <div class="card border-opacity-10 m-2 p-2  @backgroundColorClass @borderColorClass">
+        <div class="card-header @borderColorClass">
+            <p class="@textColorClass h3 p-2"> Traffic </p>
+        </div>
+
+        <div class="card-body">
+            <SfGrid DataSource="@TrafficClassifier.Connections.Select(conn => conn.Value)"
+                    AllowGrouping="true"
+                    EnableStickyHeader="true" />
+        </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+@code {
+
+    private bool _isRefreshing = false;
+
+    private GridPageSettings gridPageSettings = new GridPageSettings
+        {
+            PageSizes = new string[] { "100", "80", "70" },
+            PageSize = 100,
+            CurrentPage = 1
+        };
+
+
+    private PeriodicTimer periodicTimer = new(TimeSpan.FromSeconds(5));
+
+    private DateTime LastRefresh { get; set; } = DateTime.Now;
+
+    private string RefreshString => IsRefreshing ? $"Last refresh: {LastRefresh}" : $"NOT Refreshing: {LastRefresh}";
+
+    private bool IsRefreshing
+    {
+        get => _isRefreshing;
+        set
+        {
+            if (_isRefreshing != value)
+            {
+                _isRefreshing = value;
+                if (_isRefreshing)
+                {
+                    _ = RefreshTask(refreshCTS.Token);
+                }
+                else
+                {
+                    refreshCTS.Cancel();
+                    refreshCTS = new();
+                };
+            };
+        }
+    }
+
+    private CancellationTokenSource refreshCTS = new();
+
+
+
+    protected override void OnInitialized()
+    {
+        IsRefreshing = true;
+        // TrafficClassifier.PropertyChanged += (sender, args) => InvokeAsync(InfoBtnOnClick);
+    }
+
+    async Task RefreshTask(CancellationToken cancellationToken)
+    {
+
+        PeriodicTimer periodicTimer = new(TimeSpan.FromSeconds(5));
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            await periodicTimer.WaitForNextTickAsync(cancellationToken);
+            LastRefresh = DateTime.Now;
+            await InvokeAsync(() => StateHasChanged());
+
+        };
+
+    }
+
+
+    SfButton ToggleBtnObj;
+
+    private string textColorClass => IsLightTheme ? "text-dark" : "text-light";
+
+    private string borderColorClass => IsLightTheme ? "border-dark" : "border-light";
+
+    private string backgroundColorClass => IsLightTheme ? "bg-light" : "bg-dark";
+
+    public string Content = ThemeTypes.Light;
+
+    bool IsLightTheme => Content.Equals(ThemeTypes.Light);
+
+    public void ToggleTheme()
+        => JS.InvokeAsync<object>("setTheme", Content = IsLightTheme ? ThemeTypes.Dark : ThemeTypes.Light);
+
+
+}
+
+
+
+
+
