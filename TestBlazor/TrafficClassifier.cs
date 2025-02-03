@@ -10,15 +10,24 @@ public record MyNetworkDevice(string Description, ICaptureStatistics Statistics)
 
 public class TrafficClassifier : ITrafficClassifier
 {
-	private readonly TimeSpan PacketTimeout = TimeSpan.FromSeconds(30); // Timeout for TCP connections
+	private readonly TimeSpan PacketTimeout = TimeSpan.FromSeconds(30); 
 
 	public event PropertyChangedEventHandler? PropertyChanged;
-	public ConcurrentDictionary<string, MyConnection> Connections { get; } = new();
+	private ConcurrentDictionary<string, MyConnection> Connections { get; } = new();
+    public IEnumerable<KeyValuePair<string, MyConnection>> YellowConnections => Connections.Where(p => !p.Value.ResponseReceived && !WhitelistedConnectionKeys.Contains(p.Key));
+   
 
-	private readonly CaptureDeviceList _networkDevices = CaptureDeviceList.Instance;
-	public IEnumerable<MyNetworkDevice> MyNetworkDevices => _networkDevices.Select(device => new MyNetworkDevice(device.Description, device.Statistics));
+    private CaptureDeviceList? _networkDevices;
+	public IEnumerable<MyNetworkDevice> MyNetworkDevices { get; private set; } = [];
 
-	public string InitialisationError { get; private set; } = string.Empty;
+	public List<string> WhitelistedConnectionKeys { get; set; } = [];
+
+	public MyFixedSizeConcurrentQueue<MyConnection> LastRedConnections { get; private set; } = new(100);
+    public MyFixedSizeConcurrentQueue<MyConnection> LastGreenConnections { get; private set; } = new(100);
+
+
+
+    public string InitialisationError { get; private set; } = string.Empty;
 
 	private void Device_OnPacketArrival(object sender, PacketCapture e)
 	{
@@ -51,14 +60,32 @@ public class TrafficClassifier : ITrafficClassifier
 		if (Connections.TryGetValue(packet.ResponseKey, out MyConnection? value))
 		{
 			value.SetResponse();
-			PropertyChanged?.Invoke(this, new(nameof(Connections)));
+			if(WhitelistedConnectionKeys.Contains(value.ConnectionKey))
+			{
+				LastGreenConnections.Enqueue(value);
+                PropertyChanged?.Invoke(this, new(nameof(LastGreenConnections)));
+            }
+			else
+			{
+				LastRedConnections.Enqueue(value);
+                PropertyChanged?.Invoke(this, new(nameof(LastRedConnections)));
+            }
+			
 		}
 		else
 		{
-			if (Connections.TryAdd(packet.RequestKey, new MyConnection(packet)))
+			var newConnection = new MyConnection(packet);
+            if (Connections.TryAdd(packet.RequestKey, newConnection))
 			{
-				PropertyChanged?.Invoke(this, new(nameof(Connections)));
-			}
+                if (WhitelistedConnectionKeys.Contains(newConnection.ConnectionKey))
+                {
+                    PropertyChanged?.Invoke(this, new(nameof(LastGreenConnections)));
+                }
+                else
+                {
+                    PropertyChanged?.Invoke(this, new(nameof(YellowConnections)));
+                }
+            }
 
 		}
 	}
@@ -91,7 +118,9 @@ public class TrafficClassifier : ITrafficClassifier
 	{
 		try
 		{
-			if (_networkDevices.Count < 1)
+			_networkDevices = CaptureDeviceList.Instance;
+			MyNetworkDevices = _networkDevices?.Select(device => new MyNetworkDevice(device.Description, device.Statistics)).ToList() ?? [];
+            if (_networkDevices?.Count < 1)
 			{
 				throw new Exception("No network devices found. Ensure Npcap is installed.");
 			}
@@ -100,6 +129,7 @@ public class TrafficClassifier : ITrafficClassifier
 
 			foreach (var device in _networkDevices)
 			{
+
 				device.OnPacketArrival += Device_OnPacketArrival;
 				device.Open(DeviceModes.Promiscuous, 1000);
 				device.StartCapture();
@@ -125,7 +155,8 @@ public class TrafficClassifier : ITrafficClassifier
 
 	public Task StopAsync(CancellationToken cancellationToken)
 	{
-		foreach (var device in _networkDevices)
+		if(_networkDevices == null) return Task.CompletedTask;
+        foreach (var device in _networkDevices)
 		{
 			device.StopCapture();
 			device.Close();

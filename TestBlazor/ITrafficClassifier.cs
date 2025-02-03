@@ -3,15 +3,20 @@ using System.ComponentModel;
 
 namespace TestBlazor
 {
-	public interface ITrafficClassifier : IHostedService, INotifyPropertyChanged
-	{
-		ConcurrentDictionary<string, MyConnection> Connections { get; }
-		string InitialisationError { get; }
-		IEnumerable<MyNetworkDevice> MyNetworkDevices { get; }
+    public interface ITrafficClassifier : IHostedService, INotifyPropertyChanged
+    {
+        IEnumerable<KeyValuePair<string, MyConnection>> YellowConnections { get; }
 
-		event PropertyChangedEventHandler? PropertyChanged;
+        List<string> WhitelistedConnectionKeys { get; }
 
-		Task StartAsync(CancellationToken cancellationToken);
-		Task StopAsync(CancellationToken cancellationToken);
-	}
+        MyFixedSizeConcurrentQueue<MyConnection> LastRedConnections { get; }
+        MyFixedSizeConcurrentQueue<MyConnection> LastGreenConnections { get; }
+        string InitialisationError { get; }
+        IEnumerable<MyNetworkDevice> MyNetworkDevices { get; }
+
+        event PropertyChangedEventHandler? PropertyChanged;
+
+        Task StartAsync(CancellationToken cancellationToken);
+        Task StopAsync(CancellationToken cancellationToken);
+    }
 }
