@@ -5,15 +5,6 @@ using System.ComponentModel;
 
 namespace TestBlazor;
 
-public class MyNetworkDevice(string description, uint receivedPackets) 
-{
- 
-
-    public string Description { get; init; } = description;
-    public uint ReceivedPackets { get; set; } = receivedPackets;
-    
-};
-
 
 public class TrafficClassifier : ITrafficClassifier
 {
@@ -21,23 +12,15 @@ public class TrafficClassifier : ITrafficClassifier
 
     public event PropertyChangedEventHandler? PropertyChanged;
     private ConcurrentDictionary<string, MyConnection> Connections { get; } = new();
-    public IEnumerable<KeyValuePair<string, MyConnection>> YellowConnections => Connections.Where(p => !p.Value.ResponseReceived && !WhitelistedConnectionKeys.Contains(p.Key));
-
-
-    private CaptureDeviceList? _networkDevices;
    
-
+    private CaptureDeviceList? _networkDevices;
+  
     public List<MyNetworkDevice> MyNetworkDevices => CaptureDeviceList.Instance.Select(e => new MyNetworkDevice(e.Description, e.Statistics.ReceivedPackets)).ToList();
 
-    public List<string> WhitelistedConnectionKeys { get; set; } = [];
+    public List<MyPacket> WhitelistedPackets { get; set; } = [];
 
     public MyFixedSizeConcurrentQueue<MyConnection> LastRedConnections { get; private set; } = new(100);
     public MyFixedSizeConcurrentQueue<MyConnection> LastGreenConnections { get; private set; } = new(100);
-
-
-   
-
-
 
     public string InitialisationError { get; private set; } = string.Empty;
 
@@ -82,7 +65,7 @@ public class TrafficClassifier : ITrafficClassifier
         if (Connections.TryGetValue(packet.ResponseKey, out MyConnection? value))
         {
             value.SetResponse();
-            if (WhitelistedConnectionKeys.Contains(value.ConnectionKey))
+            if (WhitelistedPackets.Any(p => p.CompareWhitelistedPacketWithReceivedPacket(packet)))
             {
                 LastGreenConnections.Enqueue(value);
                 PropertyChanged?.Invoke(this, new(nameof(LastGreenConnections)));
@@ -96,19 +79,7 @@ public class TrafficClassifier : ITrafficClassifier
         }
         else
         {
-            var newConnection = new MyConnection(packet);
-            if (Connections.TryAdd(packet.RequestKey, newConnection))
-            {
-                if (WhitelistedConnectionKeys.Contains(newConnection.ConnectionKey))
-                {
-                    PropertyChanged?.Invoke(this, new(nameof(LastGreenConnections)));
-                }
-                else
-                {
-                    PropertyChanged?.Invoke(this, new(nameof(YellowConnections)));
-                }
-            }
-
+            Connections.TryAdd(packet.RequestKey, new MyConnection(packet));
         }
     }
     private async Task CleanupStaleEntries<T>(ConcurrentDictionary<string, T> dictionary, TimeSpan timeout, CancellationToken cancellationToken)

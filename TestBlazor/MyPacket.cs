@@ -10,7 +10,7 @@ namespace TestBlazor;
 /// <param name="SourcePort">The source port of the packet.</param>
 /// <param name="DestinationPort">The destination port of the packet.</param>
 /// <param name="PacketType">The type of the packet (TCP, UDP, ICMP, etc.).</param>
-public record MyPacket(ushort SourcePort = default, ushort DestinationPort = default, ConnectionType PacketType = ConnectionType.Unknown)
+public record MyPacket(ushort SourcePort = default, ushort DestinationPort = default, ConnectionType PacketType = ConnectionType.Unknown) 
 {
 	/// <summary>
 	/// Initializes a new instance of the <see cref="MyPacket"/> class using a TCP packet and an IP packet.
@@ -68,4 +68,14 @@ public record MyPacket(ushort SourcePort = default, ushort DestinationPort = def
 	public string ResponseKey => PacketType.Equals(ConnectionType.Icmp) ?
 		$"{PacketType}-{DestinationIp}:{SourceIp}" :
 		$"{PacketType}-{DestinationIp}:{SourceIp}-{DestinationPort}:{SourcePort}";
+
+    
+	public bool CompareWhitelistedPacketWithReceivedPacket(MyPacket receivedPacket) 
+	{
+		if(!SourceIp.Equals(receivedPacket.SourceIp) || !DestinationIp.Equals(receivedPacket.DestinationIp)) { return false; }
+		if(SourcePort !=0 && receivedPacket.SourcePort != SourcePort) {  return false; }
+        if(DestinationPort != 0 && receivedPacket.DestinationPort != DestinationPort) { return false; }
+		return true;
+    }
+
 }

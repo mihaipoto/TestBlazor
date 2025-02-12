@@ -5,9 +5,9 @@ namespace TestBlazor
 {
     public interface ITrafficClassifier : IHostedService, INotifyPropertyChanged
     {
-        IEnumerable<KeyValuePair<string, MyConnection>> YellowConnections { get; }
+       
 
-        List<string> WhitelistedConnectionKeys { get; }
+        List<MyPacket> WhitelistedPackets { get; }
 
         MyFixedSizeConcurrentQueue<MyConnection> LastRedConnections { get; }
         MyFixedSizeConcurrentQueue<MyConnection> LastGreenConnections { get; }
