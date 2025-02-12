@@ -1,6 +1,6 @@
 ﻿namespace TestBlazor;
 
-public class MyConnection(MyPacket packet)
+public class MyConnection(MyPacket packet) :IEquatable<MyConnection>
 {
 	public void SetResponse()
 	{
@@ -9,7 +9,10 @@ public class MyConnection(MyPacket packet)
 		ConnectionKey = packet.RequestKey;
     }
 
-	public ConnectionType Type { get; set; } = packet.PacketType;
+	public bool Equals(MyConnection? other)
+	 => other is not null && ConnectionKey.Equals(other.ConnectionKey);
+
+    public ConnectionType Type { get; set; } = packet.PacketType;
 	public string Source { get; set; } = $"{packet.SourceIp}:{packet.SourcePort}";
 	public string Destination { get; set; } = $"{packet.DestinationIp} : {packet.DestinationPort}";
 	public bool ResponseReceived { get; set; } = false;

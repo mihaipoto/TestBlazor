@@ -5,7 +5,7 @@ namespace TestBlazor;
 
 
 
-public class MyFixedSizeConcurrentQueue<T>(int size) : ConcurrentQueue<T>, INotifyPropertyChanged
+public class MyFixedSizeConcurrentQueue<T>(int size) : ConcurrentQueue<T>, INotifyPropertyChanged where T : class, IEquatable<T>
 {
     private readonly object syncObject = new object();
 
@@ -15,14 +15,18 @@ public class MyFixedSizeConcurrentQueue<T>(int size) : ConcurrentQueue<T>, INoti
 
     public new void Enqueue(T obj)
     {
-        base.Enqueue(obj);
-        lock (syncObject)
+        if(!this.Contains(obj))
         {
-            while (base.Count > Size)
+            base.Enqueue(obj);
+            lock (syncObject)
             {
-                base.TryDequeue(out _);
+                while (base.Count > Size)
+                {
+                    base.TryDequeue(out _);
+                }
             }
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Count"));
         }
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Count"));
+        
     }
 }

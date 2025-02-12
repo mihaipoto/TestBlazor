@@ -12,7 +12,7 @@ namespace TestBlazor
         MyFixedSizeConcurrentQueue<MyConnection> LastRedConnections { get; }
         MyFixedSizeConcurrentQueue<MyConnection> LastGreenConnections { get; }
         string InitialisationError { get; }
-        IEnumerable<MyNetworkDevice> MyNetworkDevices { get; }
+        List<MyNetworkDevice> MyNetworkDevices { get; }
 
         event PropertyChangedEventHandler? PropertyChanged;
 
