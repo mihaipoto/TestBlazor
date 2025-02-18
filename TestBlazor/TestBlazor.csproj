@@ -10,6 +10,7 @@
 		<PackageReference Include="Syncfusion.Blazor.Charts" Version="28.1.33" />
 		<PackageReference Include="Syncfusion.Blazor.Grid" Version="28.1.33" />
 		<PackageReference Include="Syncfusion.Blazor.Layouts" Version="28.1.33" />
+		<PackageReference Include="Syncfusion.Blazor.Navigations" Version="28.1.33" />
 		<PackageReference Include="Syncfusion.Blazor.Notifications" Version="28.1.33" />
 		<PackageReference Include="Syncfusion.Blazor.Themes" Version="28.1.33" />
 

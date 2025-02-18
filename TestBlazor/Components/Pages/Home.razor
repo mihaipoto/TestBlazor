@@ -10,6 +10,7 @@
 @using Syncfusion.Blazor.Layouts
 @using Syncfusion.Blazor.Popups
 @using Syncfusion.Blazor.Charts
+@using Syncfusion.Blazor.Navigations
 
 
 
@@ -19,7 +20,7 @@
 
 	@if (string.IsNullOrWhiteSpace(TrafficClassifier.InitialisationError))
 	{
-		<div class="container-fluid">
+		<div class="container">
 			<div class="card-header d-flex justify-content-center @textColorClass">
 				<h1>Title</h1>
 			</div>
@@ -29,54 +30,83 @@
 				<SfSwitch @bind-Checked="@IsRefreshing" />
 			</div>
 
+
+
+
 			<div class="d-flex justify-content-end">
 				<p class="@textColorClass" style="font-size:smaller"><em>@RefreshString</em>  </p>
 			</div>
 
 
+			<SfAccordion class="mb-4">
+				<AccordionItems>
+					<AccordionItem Expanded="true">
+						<HeaderTemplate>Add/Remove dashboard elements</HeaderTemplate>
+						<ContentTemplate>
+							<SfCheckBox @bind-Checked="@IsRedConnectionsVisible">Red Connections: @IsRedConnectionsVisible</SfCheckBox>
+							<SfCheckBox @bind-Checked="@IsGreenConnectionsVisible">Green Connections: @IsGreenConnectionsVisible</SfCheckBox>
+							<SfCheckBox @bind-Checked="@IsMonitoredInterfacesVisible">Interfaces: @IsMonitoredInterfacesVisible</SfCheckBox>
+
+						</ContentTemplate>
+					</AccordionItem>
+				</AccordionItems>
+			</SfAccordion>
 		</div>
 
+		<div class="container-fluid">
 
-		<SfDashboardLayout Columns="2" AllowResizing="true" AllowFloating="true" AllowDragging="true">
-			<DashboardLayoutPanels>
-				<DashboardLayoutPanel Id="devics" Column="0" Row="1">
-					<HeaderTemplate>
-						<h5> Monitored interfaces </h5>
-					</HeaderTemplate>
-					<ContentTemplate>
-						<SfGrid Height="100%"
-								EnableStickyHeader="true"
-								AllowResizing="true"
-								DataSource="@TrafficClassifier.MyNetworkDevices" />
-					</ContentTemplate>
-				</DashboardLayoutPanel>
-				<DashboardLayoutPanel Id="greenConnections" Column="0" Row="1">
-					<HeaderTemplate>
-						<h5> Last green connections </h5>
-					</HeaderTemplate>
-					<ContentTemplate>
-						<SfGrid Height="100%"
-								AllowResizing="true"
-								DataSource="@TrafficClassifier.LastGreenConnections"
-								EnableStickyHeader="true" />
-					</ContentTemplate>
-				</DashboardLayoutPanel>
-				<DashboardLayoutPanel Id="redConnections" Column="0" Row="0" SizeX="2">
-					<HeaderTemplate>
-						<h5> Last red connections </h5>
-					</HeaderTemplate>
-					<ContentTemplate>
+			<SfDashboardLayout Columns="2" AllowResizing="true" AllowFloating="false" AllowDragging="true" >
+				<DashboardLayoutPanels>
 
-						<SfGrid Height="100%"
-								DataSource="@TrafficClassifier.LastRedConnections.OrderByDescending(r => r.LastActivity)"
-								AllowGrouping="true"
-								EnableStickyHeader="true"
-								AllowResizing="true" />
+					@if (IsRedConnectionsVisible)
+					{
+						<DashboardLayoutPanel Id="redConnections" Row="0" Column="0" >
+							<HeaderTemplate>
+								<h5> Last red connections </h5>
+							</HeaderTemplate>
+							<ContentTemplate>
 
-					</ContentTemplate>
-				</DashboardLayoutPanel>
-			</DashboardLayoutPanels>
-		</SfDashboardLayout>
+								<SfGrid Height="100%"
+										DataSource="@TrafficClassifier.LastRedConnections.OrderByDescending(r => r.LastActivity)"
+										AllowGrouping="true"
+										EnableStickyHeader="true"
+										AllowResizing="true" />
+
+							</ContentTemplate>
+						</DashboardLayoutPanel>
+					}
+					@if (IsGreenConnectionsVisible)
+					{
+						<DashboardLayoutPanel Id="greenConnections" Row="0" Column="1">
+							<HeaderTemplate>
+								<h5> Last green connections </h5>
+							</HeaderTemplate>
+							<ContentTemplate>
+								<SfGrid Height="100%"
+										AllowResizing="true"
+										DataSource="@TrafficClassifier.LastGreenConnections.OrderByDescending(r => r.LastActivity)"
+										EnableStickyHeader="true" />
+							</ContentTemplate>
+						</DashboardLayoutPanel>
+					}
+					@if (IsMonitoredInterfacesVisible)
+					{
+						<DashboardLayoutPanel Id="devices" Row="1" Column="0">
+							<HeaderTemplate>
+								<h5> Monitored interfaces </h5>
+							</HeaderTemplate>
+							<ContentTemplate>
+								<SfGrid Height="100%"
+										EnableStickyHeader="true"
+										AllowResizing="true"
+										DataSource="@TrafficClassifier.MyNetworkDevices" />
+							</ContentTemplate>
+						</DashboardLayoutPanel>
+					}
+				</DashboardLayoutPanels>
+			</SfDashboardLayout>
+
+		</div>
 
 	}
 	else
@@ -101,6 +131,11 @@
 @code {
 
 
+	public bool IsRedConnectionsVisible { get; set; } = false;
+
+	public bool IsGreenConnectionsVisible { get; set; } = false;
+
+	public bool IsMonitoredInterfacesVisible { get; set; } = false;
 
 	private bool _isRefreshing = false;
 
@@ -171,40 +206,13 @@
 
 	public void ToggleTheme()
 	=> JS.InvokeAsync<object>("setTheme", Content = IsLightTheme ? ThemeTypes.Dark : ThemeTypes.Light);
+
+
+
 }
 
 
 
-<style>
-	.add-widget-button {
-		margin-bottom: 10px;
-		width: 100%;
-	}
-
-	.edit-save-btn {
-		padding-right: 10px;
-		padding-bottom: 10px;
-		text-align: right;
-	}
-
-	.content-container {
-		height: 100%;
-		width: 100%;
-	}
-
-	.mobile .e-control.e-lib.e-dashboardlayout.e-responsive {
-		overflow: scroll;
-	}
-
-	.e-control.e-lib.e-dashboardlayout.e-responsive {
-		z-index: 0;
-	}
-
-	.add-widget-dialog .dialog-text {
-		margin-bottom: 5%;
-		width: 98%;
-	}
-</style>
 
 
 
