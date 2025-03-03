@@ -1,6 +1,19 @@
 ﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
 
-@Body
+<CascadingAuthenticationState>
+    <AuthorizeView>
+        <Authorized>
+            <div class="user-info">
+                Welcome, @context.User.Identity?.Name!
+            </div>
+            @Body
+        </Authorized>
+        <NotAuthorized>
+            <div>You are not authorized. Please authenticate.</div>
+        </NotAuthorized>
+    </AuthorizeView>
+</CascadingAuthenticationState>
 
 <div id="blazor-error-ui">
     An unhandled error has occurred.

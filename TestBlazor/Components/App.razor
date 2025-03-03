@@ -1,6 +1,4 @@
-﻿
-
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -16,10 +14,22 @@
     <HeadOutlet />
 </head>
 
-
-
 <body>
-    <Routes />
+    <CascadingAuthenticationState>
+        <Router AppAssembly="@typeof(App).Assembly">
+            <Found Context="routeData">
+                <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+                <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+            </Found>
+            <NotFound>
+                <PageTitle>Not found</PageTitle>
+                <LayoutView Layout="@typeof(MainLayout)">
+                    <p role="alert">Sorry, there's nothing at this address.</p>
+                </LayoutView>
+            </NotFound>
+        </Router>
+    </CascadingAuthenticationState>
+
     <script src="_framework/blazor.web.js"></script>
     <script src="bootstrap.min.js"></script>
 
@@ -43,11 +53,10 @@
 
     </script>
 
-
+    @using Microsoft.AspNetCore.Components.Authorization
+    @using TestBlazor.Components.Layout
 
 </body>
-
-
 
 </html>
 
